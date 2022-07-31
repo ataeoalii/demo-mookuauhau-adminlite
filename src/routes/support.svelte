@@ -1,121 +1,180 @@
 <script lang="ts">
-	import GedcomFileList from '$lib/components/GedcomFileList.svelte';
-	import { createGenealogy } from '$lib/graphql-access';
-	import { isSignedIn, jwt_token, nhost, user } from '$lib/nhost';
+	import { isSignedIn, user } from '$lib/nhost';
 
-	let message = '';
+	let step = 'welcome';
+	let message = ''; // warning messages
 
-	let fileinput;
-
-	function onFileSelected(e) {
-		console.log('onFileSelected(e)');
-		// let filepathToUpload = e.target.files[0];
-		// let reader = new FileReader();
-		// reader.readAsDataURL(filepathToUpload);
-		// reader.onload = e => {
-		// };
+	function signIn() {
+		console.log("Signing in...");
+		step = "add_person";
 	}
-	async function uploadFormSubmit(e) {
-		console.log('uploadFormSubmit()');
-		const formData = new FormData(e.target);
-		const submitData = {};
-		for (let field of formData) {
-			const [key, value] = field;
-			submitData[key] = value;
-		}
-		console.log('submitData: ', submitData);
 
-		console.log("submitData['gedcomfile']: ", submitData['gedcomfile']);
-
-		try {
-			const data = await nhost.storage.upload({ file: submitData['gedcomfile'] });
-			console.log(data);
-			if (data.error) {
-				console.log('data.error: ', data.error);
-				message = data.error.message;
-			} else {
-				message = 'success';
-
-				//fileMetadata: Object { id: "0cc3058c-85cd-4a4f-87e6-c1833860e6d1", name: "kekoolani_07-10-2011.ged", size: 1493829, … }
-
-				// if fileupload works, also insert mookuauhau record with reference
-				if ($user && $user.id) {
-					const genealogy = {
-						name: submitData['name'] || data?.fileMetadata?.name,
-						owner_id: $user.id,
-						filename: data?.fileMetadata?.name,
-						file_id: data?.fileMetadata?.id,
-						load_status: 'new'
-					};
-					await createGenealogy(genealogy, 'user', $jwt_token);
-				} else {
-					throw Error('missing user id');
-				}
-			}
-		} catch (error) {
-			console.log('error: ', error);
-			message = message + '; ' + error?.message;
-		}
+	function addPerson() {
+		console.log("Adding person...");
+		step = "step_one";
 	}
+
+	function stepOne() {
+		console.log("Step one...");
+		step = "step_two";
+	}
+
+	function stepTwo() {
+		step = "step_three";
+	}
+
+	function stepThree() {
+		step = "add_person";
+	}
+
 </script>
 
 <h2>Supporting Documentation Update</h2>
 
 <div>
-	Uploading a GEDCOM file will queue it for processing to a new Moʻokūʻauhau (family tree) dataset.
+	Upload supporting documentation for a person and store it in a database for retrieval.
 </div>
 
-<div style="color:red">{message}</div>
+<div style="color:red">{step}</div>
 
-	<div id="app">
-		<h3>Upload Supporting Documentation</h3>
+{#if step === 'welcome'}
+
+	<div id="welcome">
+		<h3>E Komo Mai</h3>
+		<input type="text" id="username" />
+		<label for="username" class="mdc-floating-label">Username</label>
+		<input type="password" id="password" />
+		<label for="password" class="mdc-floating-label">Password</label>
+		<div class="mdc-touch-target-wrapper">
+			<button class="mdc-button mdc-button--raised" on:click={signIn}>
+				<span class="mdc-button__ripple"></span>
+				<span class="mdc-button__touch"></span>
+				<span class="mdc-button__focus-ring"></span>
+				<span class="mdc-button__label">Login</span>
+			</button>
+		</div>
 	</div>
-	<form on:submit|preventDefault={uploadFormSubmit}>
-		<div class="form-item-wrapper">
-			<label for="fam_name" class="form-label">Family Name</label>
-			<input id="fam_name" name="fam_name" type="text" placeholder="Family Name" class="form-field" /><br />
-			<label for="given_name" class="form-label">Given Name</label>
-			<input id="given_name" name="given_name" type="text" placeholder="Given Name" class="form-field" /><br />
-			<label for="birthplace" class="form-label">Birthplace</label>
-			<input id="birthplace" name="birthplace" type="text" placeholder="Birthplace" class="form-field" /><br />
-			<label for="birthdate" class="form-label">Birthdate</label>
-			<input id="birthdate" name="birthdate" type="text" placeholder="Birthdate" class="form-field" /><br />
+{:else if step === 'add_person'}
+	<div id="add_person">
+		<h3>Hello, [{user.name}]</h3>
+		<div class="mdc-touch-target-wrapper">
+
+
+			<button class="mdc-button mdc-button--raised" on:click={addPerson}>
+				<span class="mdc-button__ripple"></span>
+				<span class="mdc-button__touch"></span>
+				<span class="mdc-button__focus-ring"></span>
+				<span class="mdc-button__label">Add Person</span>
+			</button>
 		</div>
-		<input type="hidden" name="" bind:this={fileinput} />
+	</div>
+{:else if step === 'step_one'}
+	<div id="step_one">
+		<h3>Step 1: Basic Info</h3>
+		Step 1: Basic Info<br />
+		Step 2: Relationship<br />
+		Step 3: Upload Docs<br />
 
-		<img
-			class="upload"
-			src="https://static.thenounproject.com/png/625182-200.png"
-			alt=""
-			on:click={() => {
-				fileinput.click();
-			}}
-		/>
-		<div
-			class="chan"
-			on:click={() => {
-				fileinput.click();
-			}}
-		>
-			Choose GEDCOM file
+		<ul>
+			<li>First Name</li>
+			<li>Middle Name (optional)</li>
+			<li>Last Name</li>
+			<li>Date of birth</li>
+			<li>Birthplace</li>
+			<li>Date of Death (optional)</li>
+		</ul>
+		<div class="mdc-touch-target-wrapper">
+			<button class="mdc-button mdc-button--raised" on:click={stepOne}>
+			<span class="mdc-button__ripple"></span>
+			<span class="mdc-button__touch"></span>
+			<span class="mdc-button__focus-ring"></span>
+			<span class="mdc-button__label">Next</span>
+			</button>
 		</div>
-		<input
-			name="gedcomfile"
-			type="file"
-			accept=".ged, .gedcom"
-			on:change={(e) => onFileSelected(e)}
-			bind:this={fileinput}
-		/>
-		<input type="submit" value="Submit/Upload" />
-	</form>
+	</div>
+{:else if step === 'step_two'}
 
-<GedcomFileList />
+	<!-- TODO: add edit/pre-populate -->
+	<div id="step_two">
+		<h3>Step 2: Relationship</h3>
+		Step 1: Basic Info<br />
+		Step 2: Relationship<br />
+		Step 3: Upload Docs<br />
 
-<style>
-	.upload {
-		display: flex;
-		height: 50px;
-		width: 50px;
-		cursor: pointer;
-	}
-</style>
+		<h4>Biological</h4> 
+		<ul>
+			<li>Mother</li>
+				<li>First Name</li>
+				<li>Middle Name (optional)</li>
+				<li>Last Name</li>
+				<li>Date of birth</li>
+				<li>Birthplace</li>
+				<li>Date of Death (optional)</li>
+		  </ul>
+		  <ul>
+			<li>Father</li>
+				<li>First Name</li>
+				<li>Middle Name (optional)</li>
+				<li>Last Name</li>
+				<li>Date of birth</li>
+				<li>Birthplace</li>
+				<li>Date of Death (optional)</li>
+		  </ul>
+		<h4>Adopted</h4> 
+		<ul>
+			<li>Mother</li>
+				<li>First Name</li>
+				<li>Middle Name (optional)</li>
+				<li>Last Name</li>
+				<li>Date of birth</li>
+				<li>Birthplace</li>
+				<li>Date of Death (optional)</li>
+		  </ul>
+		  <ul>
+			<li>Father</li>
+				<li>First Name</li>
+				<li>Middle Name (optional)</li>
+				<li>Last Name</li>
+				<li>Date of birth</li>
+				<li>Birthplace</li>
+				<li>Date of Death (optional)</li>
+		  </ul>
+		  <div class="mdc-touch-target-wrapper">
+			<button class="mdc-button mdc-button--raised" on:click={stepTwo}>
+			<span class="mdc-button__ripple"></span>
+			<span class="mdc-button__touch"></span>
+			<span class="mdc-button__focus-ring"></span>
+			<span class="mdc-button__label">Next</span>
+			</button>
+		</div>
+	</div>
+
+{:else if step === 'step_three'}
+	<div id="step_three">
+		<h3>Step 3: Upload Docs</h3>
+		Step 1: Basic Info<br />
+		Step 2: Relationship<br />
+		Step 3: Upload Docs<br />
+
+		<h4>Required</h4> 
+		<ul>
+			<li>Birth Certificate</li>
+			<li>If no birth certificate, allow for other types of documentation</li>
+		</ul>
+		<h4>Optional</h4> 
+		<ul>
+			<li>Any kine you like</li>
+		</ul>
+		<form>
+			<input type="file" id="support_doc" name="support_doc">
+		</form>
+		<div class="mdc-touch-target-wrapper">
+			<button class="mdc-button mdc-button--raised"  on:click={stepThree}>
+			<span class="mdc-button__ripple"></span>
+			<span class="mdc-button__touch"></span>
+			<span class="mdc-button__focus-ring"></span>
+			<span class="mdc-button__label">Finish</span>
+			</button>
+		</div>
+	</div>
+{/if}

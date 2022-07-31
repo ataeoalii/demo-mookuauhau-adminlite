@@ -1,20 +1,20 @@
 <script lang="ts">
-    import { get_mookuauhau_list } from "$lib/graphql-access";
+    import { get_person_list } from "$lib/person-access";
     import { jwt_token } from "$lib/nhost";
     import { onMount } from "svelte";
 
-    let mookuauhauList: Array<any> = [];
+    let personList: Array<any> = [];
 
 	onMount(async() => {
-        const data = await get_mookuauhau_list('user', $jwt_token);
+        const data = get_person_list();
         console.log("data: ", data);
-        mookuauhauList = data?.mookuauhau;
+        personList = Array.from(data.values());
 	});
 </script>
 
-{#if mookuauhauList}
+{#if personList}
 <ul>
-    {#each mookuauhauList as m}
+    {#each personList as m}
     <li>
         {m.mookuauhau_id}
         {m.filename}
